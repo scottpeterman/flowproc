@@ -1,0 +1,26 @@
+sIP
+dIP
+sPort
+dPort
+pro         protocol, as in 6, 17 etc.
+packets
+bytes
+flags       tcpflags, e.g. " S      "
+sTime
+duration
+eTime
+sen         SiLK sensor
+in
+out
+nhIP        nexthop
+initialF
+sessionF
+attribut
+appli
+cla         SiLK class
+type        SiLK type, e.g. IN, OUT
+sTime+msec  \
+eTime+msec   | values same as above (without msec)
+dur+msec    /
+iTy         ICMP type
+iCo         ICMP 
