@@ -22,3 +22,6 @@ test: pull
 
 sdist: test
 	.venv/bin/python setup.py sdist
+
+upload:
+	sh -c ". .venv/bin/activate; pip install twine; twine upload dist/*; deactivate"
