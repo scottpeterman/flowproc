@@ -2,6 +2,8 @@ import logging
 import struct
 import sys
 
+from flowproc import v9_state
+
 # global settings
 logger = logging.getLogger(__name__)
 fmt1 = logging.Formatter("[%(asctime)s] %(levelname)-8s %(name)s: %(message)s")
@@ -13,15 +15,6 @@ logger.addHandler(sh)
 
 LIM = 1800  # Out of sequence tdiff limit for discarding templates
 lim = LIM
-
-
-def handle_unspecified(setid, packed):
-    """
-    Responsibility: handle what is not known
-    """
-    logger.error(
-        "No implementation for unknown ID {:3d} - {}".format(setid, packed)
-    )
 
 
 def parse_data_flowset(tid, packed):
@@ -38,13 +31,15 @@ def parse_data_flowset(tid, packed):
     record_count = 0
 
     try:
-        template = Template.get(tid)
+        template = v9_state.Template.get(tid)
 
-        # TODO Implement instead of doing this placeholder stuff:
-        logger.debug("{} {}".format(tid, template.types))
+        if isinstance(template, v9_state.OptionsTemplate):
+            logger.debug("OT {} {} {}".format(template.scopelen, template.optionlen, template.types))
+        else:
+            logger.debug("T  {} {}".format(tid, template.types))
+
         reclen = sum(template.lengths)
-
-        record_count = len(packed) // reclen  # // division to rule out padding
+        record_count = len(packed) // reclen  # divide // to rule out padding
 
     except KeyError:
         logger.warning(
@@ -52,13 +47,6 @@ def parse_data_flowset(tid, packed):
         )
 
     return record_count
-
-
-class OptionsTemplate:
-    """
-    Responsibility: represent Options Template Record
-    """
-    # TODO Use or delete!
 
 
 def parse_options_template_flowset(packed):
@@ -71,20 +59,28 @@ def parse_options_template_flowset(packed):
     Return:
         number of records processed
     """
-    record_count = 0
+    record_count = 1
 
     start = 0
     stop = 6
-    assert len(packed[start:stop]) == stop
 
-    # TODO Replace this by a proper implementation.
     unpacked = struct.unpack("!HHH", packed[start:stop])
-    Template(unpacked[0], unpacked[1:])
+    tid, scopelen, optionlen = unpacked
 
-    return 1
+    start = stop
+    reclen = scopelen + optionlen
+    stop += reclen
+
+    tbytes = packed[start:stop]
+    assert reclen % 4 == 0
+    tdata = struct.unpack("!" + "HH" * (reclen // 4), tbytes)
+
+    v9_state.OptionsTemplate(tid, tdata, scopelen, optionlen)
+
+    return record_count
 
 
-class Template:
+class Zemplate:
     """
     Responsibility: represent Template Record
     """
@@ -96,7 +92,7 @@ class Template:
         self.tid = tid
         self.tdata = tdata
         try:
-            template = Template.tdict[tid]
+            template = Zemplate.tdict[tid]
             if self.__repr__() == template.__repr__():
                 logger.info("Renewing template {:d}".format(tid))
             else:
@@ -104,7 +100,7 @@ class Template:
         except KeyError:
             logger.info("Creating template {:d}".format(tid))
         finally:
-            Template.tdict[tid] = self
+            Zemplate.tdict[tid] = self
 
     @classmethod
     def get(cls, tid):
@@ -158,14 +154,14 @@ def parse_template_flowset(packed):
         start = stop
 
         # record data
-        tdata = []
-        while fieldcount > 0:
-            stop = start + 4
-            tdata += struct.unpack("!HH", packed[start:stop])
-            start = stop
-            fieldcount -= 1
+        stop += (fieldcount * 4)
 
-        Template(tid, tdata)
+        tbytes = packed[start:stop]
+        tdata = struct.unpack("!" + "HH" * fieldcount, tbytes)
+
+        start = stop
+
+        v9_state.Template(tid, tdata)
         record_count += 1
 
     return record_count
@@ -194,8 +190,12 @@ def dispatch_flowset(setid, packed):
         # Data FlowSet
         record_count += parse_data_flowset(setid, packed)
     else:
-        # [2, 255]
-        handle_unspecified(setid, packed)
+        # interval [2, 255]
+        logger.error(
+            "No implementation for unknown ID {:3d} - {}".format(
+                setid, packed
+            )
+        )
 
     return record_count
 
@@ -236,6 +236,8 @@ def parse_file(fh):
                             count, record_count
                         )
                     )
+                else:
+                    logger.warning("Processed {} records".format(count))
 
             # next packet header
             fh.seek(pos)
@@ -258,7 +260,7 @@ def parse_file(fh):
                     )
                     if updiff > lim * 1000:
                         logger.warning("Discarding templates")
-                        Template.discard_all()
+                        v9_state.Template.discard_all()
 
             lastup = up
             lastseq = seq
@@ -266,6 +268,6 @@ def parse_file(fh):
             record_count = 0
 
 
-with open(sys.argv[1], "rb") as fh:
-
-    parse_file(fh)
+# with open(sys.argv[1], "rb") as fh:
+# 
+#     parse_file(fh)

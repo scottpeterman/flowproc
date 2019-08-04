@@ -61,7 +61,7 @@ TCPFLAGS[1 << 7] = "cwr"
 
 
 def tcpflags_h(flags, brief=True):
-    """Return TCP flags repreented for humans.
+    """Return TCP flags represented for humans.
     Args:
         flags   byte, binary value representing TCP flags
         brief   if true: short (8 byte `str`) representation,

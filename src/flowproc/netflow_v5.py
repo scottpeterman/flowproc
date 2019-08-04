@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-NetFlow v5 collector implementation
+NetFlow V5 collector implementation
 """
 
 import logging
@@ -133,7 +133,18 @@ class Collector(util.AbstractCollector):
         return str(self.fields)
 
     @staticmethod
-    def _unpack_header(packet):
+    def unpack_header(packet):
+        """header length: 24, field names:
+            "version",
+            "count",
+            "SysUptime",
+            "unix_secs",
+            "unix_nsecs",
+            "flow_sequence",
+            "engine_type",
+            "engine_id",
+            "sampling_interval",
+        """
 
         # header contents as enumerated in
         # https://www.cisco.com/c/en/us/td/docs/net_mgmt/netflow_collection_engine/3-6/user/guide/format.html#wp1006108
@@ -163,16 +174,16 @@ class Collector(util.AbstractCollector):
             return
 
         # get header
-        header = Collector._unpack_header(export_packet)
+        header = Collector.unpack_header(export_packet)
 
         # log export packet summary
         logger.debug(
-            "Received {:4d} bytes from observation dom {:d} at {}".format(
+            "Received {:4d} bytes from observation domain {:d} at {}".format(
                 len(export_packet), header["engine_id"], client_addr
             )
         )
 
-        # prepare variables for record processing
+        # prepare variables for processing and report inbound
         counter = header["count"]
         self.exporter_start_t = (
             header["unix_secs"]
@@ -180,7 +191,7 @@ class Collector(util.AbstractCollector):
             - header["SysUptime"] / 1000
         )
         logger.debug(
-            "Exporter started on {}".format(
+            "Exporter started at {}".format(
                 datetime.fromtimestamp(self.exporter_start_t).strftime(
                     "%b %m %Y %H:%M:%S"
                 )

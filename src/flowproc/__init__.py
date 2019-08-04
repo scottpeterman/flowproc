@@ -10,8 +10,8 @@ from pkg_resources import DistributionNotFound
 from pkg_resources import get_distribution
 
 # from flowproc import ipfix
-from flowproc import netflowV5
-from flowproc import netflowV9
+from flowproc import netflow_v5
+from flowproc import netflow_v9
 from flowproc import util
 
 __author__ = "Tobias Frei"
@@ -42,7 +42,7 @@ def process(client_addr, export_packet, Writer):
 
     # TODO design and implement output processing chain/ workflow
 
-    v5 = netflowV5.Collector(
+    v5 = netflow_v5.Collector(
         [
             "sIP",
             "dIP",
@@ -62,7 +62,7 @@ def process(client_addr, export_packet, Writer):
     if ver == 5:
         func = v5.collect
     elif ver == 9:
-        func = netflowV9.collpack
+        func = netflow_v9.Collector().collect
     else:
         # Raise an exception but continue processing for correct packets.
         raise UnknownVersion(ver)

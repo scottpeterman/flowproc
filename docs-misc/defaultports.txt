@@ -1,0 +1,3 @@
+NetFlow V5  2055
+NetFlow V9  9995  # not according to all sources!
+IPFIX       4739
