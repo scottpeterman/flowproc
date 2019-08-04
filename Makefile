@@ -8,7 +8,7 @@ clean:
 	rm -rf .venv
 	rm -rf src/*.egg-info && rm -rf build rm -rf dist && rm -rf *.log*
 
-venv:
+venv: clean
 	python -m venv .venv
 
 pull: venv
