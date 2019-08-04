@@ -1,18 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+Parser for NetFlow V9 packets
+"""
+
 import logging
 import struct
-import sys
 
 from flowproc import v9_state
 
+__author__ = "Tobias Frei"
+__copyright__ = "Tobias Frei"
+__license__ = "mit"
+
 # global settings
 logger = logging.getLogger(__name__)
-fmt1 = logging.Formatter("[%(asctime)s] %(levelname)-8s %(name)s: %(message)s")
-fmt2 = logging.Formatter("%(levelname)-8s %(message)s")
-sh = logging.StreamHandler(sys.stderr)
-sh.setFormatter(fmt2)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(sh)
-
 LIM = 1800  # Out of sequence tdiff limit for discarding templates
 lim = LIM
 
@@ -78,55 +79,6 @@ def parse_options_template_flowset(packed):
     v9_state.OptionsTemplate(tid, tdata, scopelen, optionlen)
 
     return record_count
-
-
-class Zemplate:
-    """
-    Responsibility: represent Template Record
-    """
-
-    # dict for all the collector's templates
-    tdict = {}
-
-    def __init__(self, tid, tdata):
-        self.tid = tid
-        self.tdata = tdata
-        try:
-            template = Zemplate.tdict[tid]
-            if self.__repr__() == template.__repr__():
-                logger.info("Renewing template {:d}".format(tid))
-            else:
-                logger.warning("Replacing template {:d}".format(tid))
-        except KeyError:
-            logger.info("Creating template {:d}".format(tid))
-        finally:
-            Zemplate.tdict[tid] = self
-
-    @classmethod
-    def get(cls, tid):
-        """
-        Return:
-            `Template` or raise `KeyError`
-        """
-        return cls.tdict[tid]
-
-    @classmethod
-    def discard_all(cls):
-        """
-        Discard all templates
-        """
-        cls.tdict = {}
-
-    @property
-    def types(self):
-        return self.tdata[0::2]  # using start::step for all field types
-
-    @property
-    def lengths(self):
-        return self.tdata[1::2]  # same for all field lengths
-
-    def __repr__(self):
-        return self.tid, self.tdata
 
 
 def parse_template_flowset(packed):
@@ -266,8 +218,3 @@ def parse_file(fh):
             lastseq = seq
             count = header[1]
             record_count = 0
-
-
-# with open(sys.argv[1], "rb") as fh:
-# 
-#     parse_file(fh)
