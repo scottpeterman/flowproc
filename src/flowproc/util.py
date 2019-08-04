@@ -2,14 +2,19 @@
 """
 Various utility functions to convert port numbers, tcpflags, ICMP-type and code
 to text
+
 A `dict` to look up textual labels for protocol numbers and
 a stopwatch decorator function
+
+A class to reflect netflow exporter attributes and options
 """
 
 import functools
 import logging
 import socket
 import time
+
+from ipaddress import ip_address
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -23,7 +28,6 @@ def stopwatch(fn):
     """
     Log (DEBUG) how much time is spent in decorated fn.
     """
-
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         start = time.perf_counter()
@@ -289,3 +293,19 @@ ICMPTEXT = {
     (11, 0): "Time to Live exceeded in Transit",
     (11, 1): "Fragment Reassembly Time Exceeded",
 }
+
+
+class Exporter:
+    """
+    Responsibility:
+        - store Observation Domain ID, exporter options
+          and exporter IP address
+        - store own template objects
+    """
+
+    def __init__(self, ipa, odid):
+        self.ipa = ip_address(ipa)
+        self.odid = odid
+
+    def __repr__(self):
+        return "Exporter({}, {})".format(self.ipa, self.odid)
