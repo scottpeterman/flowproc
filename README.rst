@@ -30,17 +30,22 @@ Dependency on operating systems: to clarify.
 Recent changes
 --------------
 
+- README is now PyPi-friendly and VISIBLE
 - Added support for textual representation of IANA-assigned port and protocol
   numbers
 - Added support to get ICMP type and code from destination port number
   (Netflow V5)
-- README is now PyPi-friendly
 
 Installation
 ------------
 
 Changelog
 ---------
+
+Version 0.0.3
+~~~~~~~~~~~~~
+
+- README is now PyPi-friendly and VISIBLE
 
 Version 0.0.2
 ~~~~~~~~~~~~~
@@ -49,7 +54,6 @@ Version 0.0.2
   numbers
 - Added support to get ICMP type and code from destination port number
   (Netflow V5)
-- README is now PyPi-friendly
 - Early development
 
 Version 0.0.1
