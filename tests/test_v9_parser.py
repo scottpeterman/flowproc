@@ -29,9 +29,9 @@ packets = [
 
 def test_v9_parse_Template():
     fh = io.BytesIO(bytes.fromhex(template_packet))
-    v9_parser.parse_file(fh)
+    v9_parser.parse_file(fh, "0.0.0.0")
 
 
 def test_v9_parse_Packets():
     for p in packets:
-        v9_parser.parse_file(io.BytesIO(bytes.fromhex(p)))
+        v9_parser.parse_file(io.BytesIO(bytes.fromhex(p)), "0.0.0.0")

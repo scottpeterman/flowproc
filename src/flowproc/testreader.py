@@ -98,7 +98,7 @@ def main(args):
             fh.seek(0)  # reset
 
             if ver == 9:
-                v9_parser.parse_file(fh)
+                v9_parser.parse_file(fh, "0.0.0.0")
             else:
                 print(
                     "Not equipped to parse ver {:d}, giving up...".format(ver)

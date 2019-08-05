@@ -7,6 +7,9 @@ all: sdist
 clean:
 	rm -rf .venv
 	rm -rf src/*.egg-info && rm -rf build rm -rf dist && rm -rf *.log*
+	@rm -rf __pycache__
+	@find src -type d -name __pycache__ -exec rm -rf {} \;
+	@find tests -type d -name __pycache__ -exec rm -rf {} \;
 
 venv: clean
 	python -m venv .venv

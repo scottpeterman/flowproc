@@ -5,6 +5,7 @@ The flow collector daemon control program
 """
 
 import argparse
+import socket
 import sys
 import logging
 
@@ -14,68 +15,51 @@ __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
 __license__ = "mit"
 
-logger = logging.getLogger(__name__)
-
 
 def parse_args(args):
-    """Parse command line parameters
-
-    Args:
-      args ([str]): command line parameters as list of strings
-
-    Returns:
-      :obj:`argparse.Namespace`: command line parameters namespace
+    """
+    Parse command line parameters
     """
     parser = argparse.ArgumentParser(
-        description="Just a Fibonnaci demonstration")
+        description="Communicate with testlistener over UNIX socket"
+    )
     parser.add_argument(
-        '--version',
-        action='version',
-        version='flowproc {ver}'.format(ver=__version__))
+        dest="cmd",
+        help="ping, stats",
+        type=str,
+        metavar="command"
+    )
     parser.add_argument(
-        dest="n",
-        help="n-th Fibonacci number",
-        type=int,
-        metavar="INT")
+        "-s",
+        "--sock",
+        help="unix socket path for control",
+        type=str,
+        action="store",
+    )
     parser.add_argument(
-        '-v',
-        '--verbose',
-        dest="loglevel",
-        help="set loglevel to INFO",
-        action='store_const',
-        const=logging.INFO)
-    parser.add_argument(
-        '-vv',
-        '--very-verbose',
-        dest="loglevel",
-        help="set loglevel to DEBUG",
-        action='store_const',
-        const=logging.DEBUG)
+        "-V",
+        action="version",
+        version="flowproc {ver}".format(ver=__version__),
+    )
     return parser.parse_args(args)
 
 
-def setup_logging(loglevel):
-    """Setup basic logging
-
-    Args:
-      loglevel (int): minimum loglevel for emitting messages
-    """
-    logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-    logging.basicConfig(level=loglevel, stream=sys.stdout,
-                        format=logformat, datefmt="%Y-%m-%d %H:%M:%S")
-
-
 def main(args):
-    """Main entry point allowing external calls
-
-    Args:
-      args ([str]): command line parameter list
+    """
+    Main entry point allowing external calls
     """
     args = parse_args(args)
-    setup_logging(args.loglevel)
-    _logger.debug("Starting crazy calculations...")
-    print("The {}-th Fibonacci number is {}".format(args.n, fib(args.n)))
-    _logger.info("Script ends here")
+
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    client.connect(args.sock)
+    TX = args.cmd.encode()
+    TX_sent = client.send(TX)
+
+    if TX_sent != len(TX):
+        print("TX incomplete")
+
+    print(client.recv(1024).decode())
+    client.close()
 
 
 def run():

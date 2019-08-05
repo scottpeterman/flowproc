@@ -6,6 +6,7 @@ Parser for NetFlow V9 packets
 import logging
 import struct
 
+# from flowproc import util
 from flowproc import v9_state
 
 __author__ = "Tobias Frei"
@@ -14,7 +15,7 @@ __license__ = "mit"
 
 # global settings
 logger = logging.getLogger(__name__)
-LIM = 1800  # Out of sequence tdiff limit for discarding templates
+LIM = 1800  # out of sequence tdiff limit for discarding templates
 lim = LIM
 
 
@@ -43,7 +44,7 @@ def parse_data_flowset(tid, packed):
         record_count = len(packed) // reclen  # divide // to rule out padding
 
     except KeyError:
-        logger.warning(
+        logger.debug(
             "No template, discarding Data FlowSet ID {:d}".format(tid)
         )
 
@@ -152,9 +153,41 @@ def dispatch_flowset(setid, packed):
     return record_count
 
 
-def parse_file(fh):
+def parse_packet(datagram, ipa):
+    """
+    Responsibility: parse UDP packet received from NetFlow V9 exporter
+
+    Args:
+        packet  `bytes`: next packet to parse
+        ipa     `str` or `int`: ip address to use for identification in
+                                `flowproc.util.Exporter`
+    """
+    logger.warning("Alpha, parsing packet {} WITHOUT checks!".format(
+            struct.unpack("!HHIIII", datagram[:20])
+        )
+    )
+
+    packed = datagram[20:]
+
+    while len(packed) > 0:
+
+        # FlowSet header
+        setid, setlen = struct.unpack("!HH", packed[:4])
+
+        # data
+        data = packed[4:setlen]
+        dispatch_flowset(setid, data)
+
+        packed = packed[setlen:]
+
+
+def parse_file(fh, ipa):
     """
     Responsibility: parse raw NetFlow V9 data from disk.
+
+    Args:
+        fh      `BufferedReader`, BytesIO` etc: input file handle
+        ipa     `str` or `int`: ip addr to use for `Exporter` identification
     """
     lastseq = None
     lastup = None
@@ -189,7 +222,7 @@ def parse_file(fh):
                         )
                     )
                 else:
-                    logger.warning("Processed {} records".format(count))
+                    logger.debug("Processed {} records".format(count))
 
             # next packet header
             fh.seek(pos)
@@ -197,7 +230,7 @@ def parse_file(fh):
             assert len(packed) == 20
             header = struct.unpack("!HHIIII", packed)
 
-            logger.debug(header)
+            logger.info(header)
 
             # sequence checks
             up = header[2]
