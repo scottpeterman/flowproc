@@ -36,17 +36,18 @@ def parse_data_flowset(tid, packed):
         template = v9_state.Template.get(tid)
 
         if isinstance(template, v9_state.OptionsTemplate):
-            logger.debug("OT {} {} {}".format(template.scopelen, template.optionlen, template.types))
+            # logger.debug("OT {} {} {}".format(template.scopelen, template.optionlen, template.types))
+            pass
         else:
-            logger.debug("T  {} {}".format(tid, template.types))
+            # logger.debug("T  {} {}".format(tid, template.types))
+            pass
 
         reclen = sum(template.lengths)
         record_count = len(packed) // reclen  # divide // to rule out padding
 
     except KeyError:
-        logger.debug(
-            "No template, discarding Data FlowSet ID {:d}".format(tid)
-        )
+        # TODO Stash all these away for later processing!
+        pass
 
     return record_count
 
@@ -107,7 +108,7 @@ def parse_template_flowset(packed):
         start = stop
 
         # record data
-        stop += (fieldcount * 4)
+        stop += fieldcount * 4
 
         tbytes = packed[start:stop]
         tdata = struct.unpack("!" + "HH" * fieldcount, tbytes)
@@ -145,9 +146,7 @@ def dispatch_flowset(setid, packed):
     else:
         # interval [2, 255]
         logger.error(
-            "No implementation for unknown ID {:3d} - {}".format(
-                setid, packed
-            )
+            "No implementation for unknown ID {:3d} - {}".format(setid, packed)
         )
 
     return record_count
@@ -162,10 +161,7 @@ def parse_packet(datagram, ipa):
         ipa     `str` or `int`: ip address to use for identification in
                                 `flowproc.util.Exporter`
     """
-    logger.warning("Alpha, parsing packet {} WITHOUT checks!".format(
-            struct.unpack("!HHIIII", datagram[:20])
-        )
-    )
+    record_count = 0
 
     packed = datagram[20:]
 
@@ -176,9 +172,16 @@ def parse_packet(datagram, ipa):
 
         # data
         data = packed[4:setlen]
-        dispatch_flowset(setid, data)
+        record_count += dispatch_flowset(setid, data)
 
         packed = packed[setlen:]
+
+    header = struct.unpack("!HHIIII", datagram[:20])
+    logger.info(
+        "Parsed packet {} WITHOUT checks, {:d} recs processed".format(
+            header, record_count
+        )
+    )
 
 
 def parse_file(fh, ipa):

@@ -163,14 +163,13 @@ def startup(parser, port, socketpath):
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        pass
+        print()  # newline for ^C
 
     logger.info("Shutting down...")
     transport.close()
     if socketpath:
         sockserver.close()
         os.remove(socketpath)
-    time.sleep(2)
     loop.close()
 
 
