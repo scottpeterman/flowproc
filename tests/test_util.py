@@ -25,7 +25,7 @@ def test_port():
 
 
 def test_tcpflags():
-    assert util.tcpflags_to_str(17) == ["fin", "ack"]
+    assert util.tcpflags_to_str(17, brief=True) == "F   A   "
 
 
 def test_proto():
