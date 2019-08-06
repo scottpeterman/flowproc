@@ -293,19 +293,3 @@ ICMPTEXT = {
     (11, 0): "Time to Live exceeded in Transit",
     (11, 1): "Fragment Reassembly Time Exceeded",
 }
-
-
-class Exporter:
-    """
-    Responsibility:
-        - store Observation Domain ID, exporter options
-          and exporter IP address
-        - store own template objects
-    """
-
-    def __init__(self, ipa, odid):
-        self.ipa = ip_address(ipa)
-        self.odid = odid
-
-    def __repr__(self):
-        return "Exporter({}, {})".format(self.ipa, self.odid)

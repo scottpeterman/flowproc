@@ -158,8 +158,7 @@ def parse_packet(datagram, ipa):
 
     Args:
         packet  `bytes`: next packet to parse
-        ipa     `str` or `int`: ip address to use for identification in
-                                `flowproc.util.Exporter`
+        ipa     `str` or `int`: ip addr to use for exporter identification
     """
     record_count = 0
 
@@ -190,7 +189,7 @@ def parse_file(fh, ipa):
 
     Args:
         fh      `BufferedReader`, BytesIO` etc: input file handle
-        ipa     `str` or `int`: ip addr to use for `Exporter` identification
+        ipa     `str` or `int`: ip addr to use for exporter identification
     """
     lastseq = None
     lastup = None

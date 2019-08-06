@@ -36,9 +36,3 @@ def test_proto():
 
 def test_to_icmptc():
     assert util.dstport_to_icmptc(769) == (3, 1,)  # host unreachable
-
-
-def test_Exporter():
-    # test __init__ and __repr__
-    assert str(util.Exporter(167772161, 0)) == "Exporter(10.0.0.1, 0)"
-    assert str(util.Exporter("10.0.0.1", 0)) == "Exporter(10.0.0.1, 0)"
