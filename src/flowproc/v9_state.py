@@ -6,11 +6,14 @@ exporter attributes and options.
 
 import logging
 
+from flowproc.collector_state import AbstractTemplate 
+from flowproc.collector_state import Collector
+
 # global settings
 logger = logging.getLogger(__name__)
 
 
-class Template:
+class Template(AbstractTemplate):
     """
     Responsibility: represent Template Record
     """
@@ -18,19 +21,11 @@ class Template:
     # dict for all the collector's templates
     tdict = {}
 
-    def __init__(self, tid, tdata):
+    def __init__(self, ipa, odid, tid, tdata):
         self.tid = tid
         self.tdata = tdata
-        try:
-            template = Template.tdict[tid]
-            if self.__repr__() == template.__repr__():
-                logger.info("Renewing template {:d}".format(tid))
-            else:
-                logger.warning("Replacing template {:d}".format(tid))
-        except KeyError:
-            logger.info("Creating template {:d}".format(tid))
-        finally:
-            Template.tdict[tid] = self
+
+        Collector.register(ipa, odid, self)
 
     @classmethod
     def get(cls, tid):
@@ -58,27 +53,22 @@ class Template:
     def __repr__(self):
         return self.tid, self.tdata
 
+    def get_tid(self):
+        return self.tid
+
 
 class OptionsTemplate(Template):
     """
     Responsibility: represent Options Template Record attributes
     """
 
-    def __init__(self, tid, tdata, scopelen, optionlen):
+    def __init__(self, ipa, odid, tid, tdata, scopelen, optionlen):
         self.tid = tid
         self.tdata = tdata
         self.scopelen = scopelen
         self.optionlen = optionlen
-        try:
-            template = Template.tdict[tid]
-            if self.__repr__() == template.__repr__():
-                logger.info("Renewing options template {:d}".format(tid))
-            else:
-                logger.warning("Replacing options template {:d}".format(tid))
-        except KeyError:
-            logger.info("Creating options template {:d}".format(tid))
-        finally:
-            Template.tdict[tid] = self
+
+        Collector.register(ipa, odid, self)
 
     def __repr__(self):
         return self.tid, self.tdata, self.scopelen, self.optionlen

@@ -58,15 +58,13 @@ class Collector:
         pass
 
     @classmethod
-    def get(cls, *args):
+    def get_qualified(cls, *args):
         """
         Get an object under this collector
         """
-        # A simple idiom to fill a fixed len list for (variable len) *args:
+        # A simple idiom to fill a fixed len list from (variable len) *args:
         path =  [args[i] if i < len(args) else None for i in range(3)]
-        print("Path", path)
-        ipa, odid, tid = path
-        return cls.accept(RetrievingVisitor(ipa, odid, tid))
+        return cls.accept(RetrievingVisitor(*path))
 
     @classmethod
     def register(cls, ipa, odid, template):
@@ -128,7 +126,6 @@ class RetrievingVisitor:
         self.ipa = ipa
         self.odid = odid
         self.tid = tid
-        print("Init", self.ipa, self.odid, self.tid)
 
     def visit_Collector(self, host):
         if self.ipa is not None:  # if next element in path

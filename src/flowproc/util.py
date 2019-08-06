@@ -14,8 +14,6 @@ import logging
 import socket
 import time
 
-from ipaddress import ip_address
-
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
 __license__ = "mit"

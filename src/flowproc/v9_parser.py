@@ -6,8 +6,9 @@ Parser for NetFlow V9 packets
 import logging
 import struct
 
-# from flowproc import util
+from flowproc import util
 from flowproc import v9_state
+from flowproc.collector_state import Collector
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -19,11 +20,14 @@ LIM = 1800  # out of sequence tdiff limit for discarding templates
 lim = LIM
 
 
-def parse_data_flowset(tid, packed):
+@util.stopwatch
+def parse_data_flowset(ipa, odid, tid, packed):
     """
     Responsibility: parse Data FlowSets
 
     Args:
+        ipa         `str`: ip address of exporter
+        odid        `int`: Observation Domain ID (aka Source ID)
         tid         `int`: the setid here IS the tid (aka Template ID)
         packed      `bytes`: data to parse
 
@@ -32,8 +36,8 @@ def parse_data_flowset(tid, packed):
     """
     record_count = 0
 
-    try:
-        template = v9_state.Template.get(tid)
+    template = Collector.get_qualified(ipa, odid, tid)
+    if template:
 
         if isinstance(template, v9_state.OptionsTemplate):
             # logger.debug("OT {} {} {}".format(template.scopelen, template.optionlen, template.types))
@@ -45,18 +49,21 @@ def parse_data_flowset(tid, packed):
         reclen = sum(template.lengths)
         record_count = len(packed) // reclen  # divide // to rule out padding
 
-    except KeyError:
+    else:
         # TODO Stash all these away for later processing!
         pass
 
     return record_count
 
 
-def parse_options_template_flowset(packed):
+@util.stopwatch
+def parse_options_template_flowset(ipa, odid, packed):
     """
     Responsibility: parse Options Template FlowSet
 
     Args:
+        ipa         `str`: ip address of exporter
+        odid        `int`: Observation Domain ID (aka Source ID)
         packed      `bytes`: data to parse
 
     Return:
@@ -78,16 +85,19 @@ def parse_options_template_flowset(packed):
     assert reclen % 4 == 0
     tdata = struct.unpack("!" + "HH" * (reclen // 4), tbytes)
 
-    v9_state.OptionsTemplate(tid, tdata, scopelen, optionlen)
+    v9_state.OptionsTemplate(ipa, odid, tid, tdata, scopelen, optionlen)
 
     return record_count
 
 
-def parse_template_flowset(packed):
+@util.stopwatch
+def parse_template_flowset(ipa, odid, packed):
     """
     Responsibility: parse Template FlowSet
 
     Args:
+        ipa         `str`: ip address of exporter
+        odid        `int`: Observation Domain ID (aka Source ID)
         packed      `bytes`: data to parse
 
     Return:
@@ -115,17 +125,19 @@ def parse_template_flowset(packed):
 
         start = stop
 
-        v9_state.Template(tid, tdata)
+        v9_state.Template(ipa, odid, tid, tdata)
         record_count += 1
 
     return record_count
 
 
-def dispatch_flowset(setid, packed):
+def dispatch_flowset(ipa, odid, setid, packed):
     """
     Responsibility: dispatch FlowSet data to the appropriate parser
 
     Args:
+        ipa         `str`: ip address of exporter
+        odid        `int`: Observation Domain ID (aka Source ID)
         setid       `int`: the setid here IS the tid (aka Template ID)
         packed      `bytes`: data to dispatch
 
@@ -136,13 +148,13 @@ def dispatch_flowset(setid, packed):
 
     if setid == 0:
         # Template FlowSet
-        record_count += parse_template_flowset(packed)
+        record_count += parse_template_flowset(ipa, odid, packed)
     elif setid == 1:
         # Options Template FlowSet
-        record_count += parse_options_template_flowset(packed)
+        record_count += parse_options_template_flowset(ipa, odid, packed)
     elif 255 < setid and setid < 65536:
         # Data FlowSet
-        record_count += parse_data_flowset(setid, packed)
+        record_count += parse_data_flowset(ipa, odid, setid, packed)
     else:
         # interval [2, 255]
         logger.error(
@@ -162,6 +174,9 @@ def parse_packet(datagram, ipa):
     """
     record_count = 0
 
+    header = struct.unpack("!HHIIII", datagram[:20])
+    ver, count, up, unixsecs, seq, odid = header
+
     packed = datagram[20:]
 
     while len(packed) > 0:
@@ -171,11 +186,10 @@ def parse_packet(datagram, ipa):
 
         # data
         data = packed[4:setlen]
-        record_count += dispatch_flowset(setid, data)
+        record_count += dispatch_flowset(ipa, odid, setid, data)
 
         packed = packed[setlen:]
 
-    header = struct.unpack("!HHIIII", datagram[:20])
     logger.info(
         "Parsed packet {} WITHOUT checks, {:d} recs processed".format(
             header, record_count
@@ -195,6 +209,7 @@ def parse_file(fh, ipa):
     lastup = None
     count = None
     record_count = 0
+    odid = None
 
     while True:
         pos = fh.tell()
@@ -212,7 +227,7 @@ def parse_file(fh, ipa):
         if setid != 9:
             packed = fh.read(setlen - 4)
             assert len(packed) == setlen - 4
-            record_count += dispatch_flowset(setid, packed)
+            record_count += dispatch_flowset(ipa, odid, setid, packed)
 
         else:
             # for completeness' sake
@@ -231,12 +246,11 @@ def parse_file(fh, ipa):
             packed = fh.read(20)
             assert len(packed) == 20
             header = struct.unpack("!HHIIII", packed)
+            ver, count, up, unixsecs, seq, odid = header
 
             logger.info(header)
 
             # sequence checks
-            up = header[2]
-            seq = header[4]
             if lastup and lastseq:
                 if seq != lastseq + 1:
                     updiff = up - lastup

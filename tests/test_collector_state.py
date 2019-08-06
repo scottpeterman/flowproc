@@ -14,7 +14,6 @@ from datetime import datetime
 
 from flowproc.collector_state import AbstractTemplate
 from flowproc.collector_state import Collector
-from flowproc.collector_state import Exporter
 
 # globals
 logger = logging.getLogger().setLevel(logging.DEBUG)
@@ -55,36 +54,36 @@ Collector.register("127.0.0.1", 0, T(300))
 def test_Collector_get():
 
     # empty path
-    assert Collector.get().__name__ == "Collector"
+    assert Collector.get_qualified().__name__ == "Collector"
 
     # paths with ipa (ip address) only
-    assert str(Collector.get("127.0.0.1")) == "127.0.0.1"  # existent
-    assert str(Collector.get("8.8.4.4")) == "8.8.4.4"  # existent
+    assert str(Collector.get_qualified("127.0.0.1")) == "127.0.0.1"  # existent
+    assert str(Collector.get_qualified("8.8.4.4")) == "8.8.4.4"  # existent
     assert (
-        str(Collector.get("2001:420:1101:1::185"))
+        str(Collector.get_qualified("2001:420:1101:1::185"))
         == "2001:0420:1101:0001:0000:0000:0000:0185"
     )
-    assert Collector.get("8.8.8.8") is None  # missing
+    assert Collector.get_qualified("8.8.8.8") is None  # missing
 
     # paths ipa, odid (observation domain ID)
-    assert str(Collector.get("2001:420:1101:1::185", 0)) == "0"
-    assert Collector.get("2001:420:1101:1::186", 0) is None  # missing
-    assert Collector.get("2001:420:1101:1::185", 1) is None  # missing
+    assert str(Collector.get_qualified("2001:420:1101:1::185", 0)) == "0"
+    assert Collector.get_qualified("2001:420:1101:1::186", 0) is None  # missing
+    assert Collector.get_qualified("2001:420:1101:1::185", 1) is None  # missing
 
     # paths ipa, odid, tid (Template ID)
-    assert Collector.get("127.0.0.1", 0, 300).get_tid() == 300
-    assert Collector.get("127.0.0.1", 1, 300) is None  # missing)
-    assert Collector.get("127.0.0.1", 0, 301) is None  # missing)
+    assert Collector.get_qualified("127.0.0.1", 0, 300).get_tid() == 300
+    assert Collector.get_qualified("127.0.0.1", 1, 300) is None  # missing)
+    assert Collector.get_qualified("127.0.0.1", 0, 301) is None  # missing)
 
     # see if the rest above has been registered
     assert None not in (
-        Collector.get("127.0.0.1", 0),
-        Collector.get("127.0.0.1", 1),
-        Collector.get("127.0.0.1", 0, 387),
-        Collector.get("127.0.0.1", 1, 387),
-        Collector.get("8.8.4.4", 3),
-        Collector.get("2001:420:1101:1::185", 0, 326),
-        Collector.get("8.8.4.4", 3, 300),
+        Collector.get_qualified("127.0.0.1", 0),
+        Collector.get_qualified("127.0.0.1", 1),
+        Collector.get_qualified("127.0.0.1", 0, 387),
+        Collector.get_qualified("127.0.0.1", 1, 387),
+        Collector.get_qualified("8.8.4.4", 3),
+        Collector.get_qualified("2001:420:1101:1::185", 0, 326),
+        Collector.get_qualified("8.8.4.4", 3, 300),
     )
 
     # TODO Collector.check_header()
