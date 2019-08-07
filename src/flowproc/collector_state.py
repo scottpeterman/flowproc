@@ -7,6 +7,7 @@ import logging
 
 from abc import ABC
 from abc import abstractmethod
+from datetime import datetime
 from ipaddress import ip_address
 
 __author__ = "Tobias Frei"
@@ -43,6 +44,10 @@ class Collector:
     """
 
     children = {}
+    created = datetime.now()
+    packets = 0
+    count = 0
+    record_count = 0
 
     @classmethod
     def accept(cls, visitor):
@@ -63,7 +68,7 @@ class Collector:
         Get an object under this collector
         """
         # A simple idiom to fill a fixed len list from (variable len) *args:
-        path =  [args[i] if i < len(args) else None for i in range(3)]
+        path = [args[i] if i < len(args) else None for i in range(3)]
         return cls.accept(RetrievingVisitor(*path))
 
     @classmethod

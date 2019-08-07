@@ -191,10 +191,16 @@ def parse_packet(datagram, ipa):
         packed = packed[setlen:]
 
     logger.info(
-        "Parsed packet {} WITHOUT checks, {:d} recs processed".format(
-            header, record_count
+        "Parsed packet {} WITHOUT checks, {:d} recs processed from {}".format(
+            header, record_count, ipa
         )
     )
+
+    # stats
+    Collector.packets += 1
+    Collector.count += 1
+    if record_count:
+        Collector.record_count += record_count
 
 
 def parse_file(fh, ipa):
@@ -249,6 +255,12 @@ def parse_file(fh, ipa):
             ver, count, up, unixsecs, seq, odid = header
 
             logger.info(header)
+
+            # stats
+            Collector.packets += 1
+            Collector.count += 1
+            if record_count:
+                Collector.record_count += record_count
 
             # sequence checks
             if lastup and lastseq:

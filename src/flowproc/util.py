@@ -36,8 +36,8 @@ def stopwatch(fn):
         logger = fn.__globals__.get("logger", None)
         if logger:
             logger.debug(
-                "{elapsed:4d} msec elapsed in '{name}'".format(
-                    elapsed=int(round(msec, 1)), name=fn.__qualname__
+                "{elapsed:8.3f} msec elapsed in '{name}'".format(
+                    elapsed=round(msec, 3), name=fn.__qualname__
                 )
             )
         return result

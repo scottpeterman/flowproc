@@ -10,7 +10,7 @@ import sys
 import logging
 
 from flowproc import __version__
-
+from flowproc import testlistener
 # from flowproc import v5_parser
 from flowproc import v9_parser
 
@@ -106,6 +106,8 @@ def main(args):
     except KeyboardInterrupt:
         print()  # newline
         print("Closing infile...")
+
+    print(testlistener.stats())
 
 
 def run():
