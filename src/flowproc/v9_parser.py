@@ -209,7 +209,7 @@ def parse_packet(datagram, ipa):
 
     # stats
     Collector.packets += 1
-    Collector.count += 1
+    Collector.count += count
     if record_count:
         Collector.record_count += record_count
 
@@ -269,7 +269,7 @@ def parse_file(fh, ipa):
 
             # stats
             Collector.packets += 1
-            Collector.count += 1
+            Collector.count += count
             if record_count:
                 Collector.record_count += record_count
 
