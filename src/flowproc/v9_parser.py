@@ -40,10 +40,10 @@ def parse_data_flowset(ipa, odid, tid, packed):
     if template:
 
         if isinstance(template, v9_state.OptionsTemplate):
-            # logger.debug("OT {} {} {}".format(template.scopelen, template.optionlen, template.types))
+            logger.debug("OT {} {} {}".format(template.scopelen, template.optionlen, template.types))
             pass
         else:
-            # logger.debug("T  {} {}".format(tid, template.types))
+            logger.debug("T  {} {}".format(tid, template.types))
             pass
 
         reclen = sum(template.lengths)
@@ -187,6 +187,17 @@ def parse_packet(datagram, ipa):
         # data
         data = packed[4:setlen]
         record_count += dispatch_flowset(ipa, odid, setid, data)
+
+        # TODO Code snippet duplicated: get organized!
+        if count:
+            if count != record_count:
+                logger.warning(
+                    "Record account not balanced {}/{}".format(
+                        count, record_count
+                    )
+                )
+            else:
+                logger.debug("Processed {} records".format(count))
 
         packed = packed[setlen:]
 

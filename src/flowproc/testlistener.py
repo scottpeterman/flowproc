@@ -9,7 +9,6 @@ import asyncio
 import sys
 import logging
 import os
-import time
 
 from flowproc import __version__
 
@@ -17,6 +16,8 @@ from flowproc import __version__
 from flowproc import v9_parser
 
 # from flowproc import v10_parser
+from flowproc.collector_state import Collector
+from flowproc.testasync import depth_first_iter
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -92,16 +93,34 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
+def stats():
+    """
+    Print basic statistics
+    """
+    return """Collector version: {}
+Collector started: {}
+Packets processed:    {:9d}
+Headers record count: {:9d}
+Records processed:    {:9d}""".format(
+        __version__,
+        Collector.created,
+        Collector.packets,
+        Collector.count,
+        Collector.record_count,
+    )
+
+
 def startup(parser, port, socketpath):
     """
     Fire up an asyncio event loop
     """
+
     class FlowServerProtocol:
         def connection_made(self, transport):
             self.transport = transport
 
-        def datagram_received(self, datagram, ipa):
-            parser.parse_packet(datagram, ipa)
+        def datagram_received(self, datagram, addr):
+            parser.parse_packet(datagram, addr[0])
 
         def connection_lost(self, exc):
             pass
@@ -115,7 +134,8 @@ def startup(parser, port, socketpath):
         """
         run = {
             "ping": lambda: "pong",
-            "stats": lambda: "Not yet implemented",
+            "stats": stats,
+            "tree": depth_first_iter,
             "shutdown": stop,
             "help": lambda: "Command must be one of {}".format(
                 [c for c in run.keys()]
