@@ -5,9 +5,8 @@ The flow collector daemon control program
 """
 
 import argparse
-import socket
+import asyncio
 import sys
-import logging
 
 from flowproc import __version__
 
@@ -44,26 +43,33 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
+@asyncio.coroutine
+def unix_socket_client(command, socketpath):
+    reader, writer = yield from asyncio.open_unix_connection(socketpath)
+
+    # command += "\n"  # readline() in the other end!
+    # read(1024) on the other end
+    writer.write(command.encode())
+
+    data = yield from reader.read(-1)
+    print(data.decode())
+    writer.close()
+
+
 def main(args):
     """
     Main entry point allowing external calls
     """
     args = parse_args(args)
 
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(args.sock)
-    TX = args.cmd.encode()
-    TX_sent = client.send(TX)
-
-    if TX_sent != len(TX):
-        print("TX incomplete")
-
-    print(client.recv(1024).decode())
-    client.close()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(unix_socket_client(args.cmd, args.sock))
+    loop.close()
 
 
 def run():
-    """Entry point for console_scripts
+    """
+    Entry point for console_scripts
     """
     main(sys.argv[1:])
 

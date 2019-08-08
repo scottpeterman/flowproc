@@ -17,7 +17,7 @@ from flowproc import v9_parser
 
 # from flowproc import v10_parser
 from flowproc.collector_state import Collector
-from flowproc.testasync import depth_first_iter
+from flowproc.testasync import depth_first_iter, TreeVisitor, stats
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -93,29 +93,12 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def stats():
-    """
-    Print basic statistics
-    """
-    return """Collector version: {}
-Collector started: {}
-Packets processed:    {:9d}
-Headers record count: {:9d}
-Records processed:    {:9d}""".format(
-        __version__,
-        Collector.created,
-        Collector.packets,
-        Collector.count,
-        Collector.record_count,
-    )
-
-
-def startup(parser, port, socketpath):
+def start(parser, host, port, socketpath):
     """
     Fire up an asyncio event loop
     """
 
-    class FlowServerProtocol:
+    class NetFlow:  # the protocol definition
         def connection_made(self, transport):
             self.transport = transport
 
@@ -125,8 +108,18 @@ def startup(parser, port, socketpath):
         def connection_lost(self, exc):
             pass
 
+    @asyncio.coroutine
+    def callback(reader, writer):  # callback function for Unix Sockets
+        data = yield from reader.read(1024)
+        msg = data.decode()
+        msg = run_command(msg)
+        writer.write(msg.encode())
+        yield from writer.drain()
+        writer.close()
+
     def stop():
         loop.stop()
+        return "loop.stop() issued..."
 
     def run_command(cmd):
         """
@@ -136,6 +129,7 @@ def startup(parser, port, socketpath):
             "ping": lambda: "pong",
             "stats": stats,
             "tree": depth_first_iter,
+            "visit": lambda: Collector.accept(TreeVisitor()),
             "shutdown": stop,
             "help": lambda: "Command must be one of {}".format(
                 [c for c in run.keys()]
@@ -146,40 +140,16 @@ def startup(parser, port, socketpath):
         else:
             return run[cmd]()
 
-    class CtrlServerProtocol:
-        def connection_made(self, transport):
-            self.transport = transport
-
-        def data_received(self, data):
-            reply = run_command(data.decode())
-            try:
-                self.transport.write(reply.encode())
-            except AttributeError:  # occurs when shutting down from here
-                pass
-
-        def connection_lost(self, exc):
-            pass
-
-        def eof_received(self):
-            pass
-
     loop = asyncio.get_event_loop()
-
-    # UDP server
-    coro = loop.create_datagram_endpoint(
-        FlowServerProtocol, local_addr=("0.0.0.0", port)
-    )
-    logger.info("Creating UDP server, host 0.0.0.0, port {:d}".format(port))
+    # UDP
+    logger.info("Starting UDP server on host {} port {}".format(host, port))
+    coro = loop.create_datagram_endpoint(NetFlow, local_addr=(host, port))
     transport, protocol = loop.run_until_complete(coro)
-
-    # Unix socket server (ctrl)
+    # Unix Sockets (ctrl)
     if socketpath:
-        coro = loop.create_unix_server(CtrlServerProtocol, path=socketpath)
-        logger.info(
-            "Creating Unix domain socket server on '{}'".format(socketpath)
-        )
-        sockserver = loop.run_until_complete(coro)
-
+        logger.info("Starting Unix Socket on {}".format(socketpath))
+        coro = asyncio.start_unix_server(callback, socketpath, loop=loop)
+        socketserver = loop.run_until_complete(coro)
     try:
         loop.run_forever()
     except KeyboardInterrupt:
@@ -188,7 +158,7 @@ def startup(parser, port, socketpath):
     logger.info("Shutting down...")
     transport.close()
     if socketpath:
-        sockserver.close()
+        socketserver.close()
         os.remove(socketpath)
     loop.close()
 
@@ -199,7 +169,6 @@ def main(args):
     """
     parser = None
     port = None
-    sock = None
 
     args = parse_args(args)
     logger.setLevel(logging.WARNING) if not args.loglevel else logger.setLevel(
@@ -208,7 +177,7 @@ def main(args):
     logger.debug(args)
 
     # configure
-    sock = args.sock
+    socketpath = args.sock
 
     if args.parser.lower() == "v5":
         # parser = v9_parser
@@ -224,14 +193,8 @@ def main(args):
         print("No suitable parser configured, giving up...")
         exit(1)
 
-    logger.debug(
-        "Starting with parser={}, port={:d}, sock={}".format(
-            parser.__name__, port, sock
-        )
-    )
-
     # fire up event loop
-    startup(parser, port, sock)
+    start(parser, "0.0.0.0", port, socketpath)
 
 
 def run():
