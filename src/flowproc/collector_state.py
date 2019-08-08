@@ -107,6 +107,7 @@ class ObservationDomain(Visitable):
     def __init__(self, odid):
         self.children = {}
         self.odid = int(odid)
+        self.optrecs = []  # option data records collected for self
 
     def __repr__(self):
         return str(self.odid)

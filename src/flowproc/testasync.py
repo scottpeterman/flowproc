@@ -3,6 +3,7 @@
 Highly EXPERIMENTAL!
 """
 
+import json
 import logging
 
 from flowproc import __version__
@@ -47,7 +48,7 @@ def depth_first_iter():
     """
     Return some kind of ASCII tree
     """
-    rep = Collector.__name__ + "\n"
+    rep = str(Collector) + "\n"
     for exp in Collector.children.values():
         rep += str(exp) + "\n"
 
@@ -55,7 +56,7 @@ def depth_first_iter():
             rep += "\t" + str(od) + "\n"
 
             for template in od.children.values():
-                rep += "\t" * 2 + str(template) + "\n"
+                rep += str(template) + "\n"
     return rep
 
 

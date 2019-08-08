@@ -10,14 +10,15 @@ import sys
 import logging
 import os
 
-from flowproc import __version__
+from importlib import reload
 
+from flowproc import __version__
+from flowproc import testasync
 # from flowproc import v5_parser
 from flowproc import v9_parser
-
+from flowproc import v9_state  # rename to something not implying state!
 # from flowproc import v10_parser
 from flowproc.collector_state import Collector
-from flowproc.testasync import depth_first_iter, TreeVisitor, stats
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -117,9 +118,14 @@ def start(parser, host, port, socketpath):
         yield from writer.drain()
         writer.close()
 
+    def load():
+        modules = (testasync, v9_state)
+        [reload(m) for m in modules]
+        return "reloaded {}".format([m.__name__ for m in modules])
+
     def stop():
         loop.stop()
-        return "loop.stop() issued..."
+        return "stopping event loop..."
 
     def run_command(cmd):
         """
@@ -127,9 +133,10 @@ def start(parser, host, port, socketpath):
         """
         run = {
             "ping": lambda: "pong",
-            "stats": stats,
-            "tree": depth_first_iter,
-            "visit": lambda: Collector.accept(TreeVisitor()),
+            "stats": testasync.stats,
+            "tree": testasync.depth_first_iter,
+            "visit": lambda: Collector.accept(testasync.TreeVisitor()),
+            "reload": lambda: load(),
             "shutdown": stop,
             "help": lambda: "Command must be one of {}".format(
                 [c for c in run.keys()]
