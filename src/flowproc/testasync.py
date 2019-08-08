@@ -68,10 +68,12 @@ Collector started: {}
 
 Packets processed:    {:9d}
 Headers record count: {:9d}
-Records processed:    {:9d}""".format(
+Records processed:    {:9d}
+Records diff:         {:9d}""".format(
         __version__,
         Collector.created,
         Collector.packets,
         Collector.count,
         Collector.record_count,
+        Collector.count - Collector.record_count,
     )

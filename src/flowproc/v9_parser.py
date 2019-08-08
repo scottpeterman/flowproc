@@ -69,23 +69,32 @@ def parse_options_template_flowset(ipa, odid, packed):
     Return:
         number of records processed
     """
-    record_count = 1
+    record_count = 0
 
     start = 0
-    stop = 6
 
-    unpacked = struct.unpack("!HHH", packed[start:stop])
-    tid, scopelen, optionlen = unpacked
+    # If padding, its length is 2, if not, at least 6 bytes are required.
+    while start < len(packed) - 2:
+        stop = start + 6
 
-    start = stop
-    reclen = scopelen + optionlen
-    stop += reclen
+        # next Template ID, Option Scope Length and Option Length
+        tid, scopelen, optionlen = struct.unpack("!HHH", packed[start:stop])
 
-    tbytes = packed[start:stop]
-    assert reclen % 4 == 0
-    tdata = struct.unpack("!" + "HH" * (reclen // 4), tbytes)
+        start = stop
 
-    v9_state.OptionsTemplate(ipa, odid, tid, tdata, scopelen, optionlen)
+        # record data
+        reclen = scopelen + optionlen
+        stop += reclen
+
+        tbytes = packed[start:stop]
+
+        assert reclen % 4 == 0  # assertion before division and cast to `int`
+        tdata = struct.unpack("!" + "HH" * (reclen // 4), tbytes)
+
+        start = stop
+
+        v9_state.OptionsTemplate(ipa, odid, tid, tdata, scopelen, optionlen)
+        record_count += 1
 
     return record_count
 
@@ -106,12 +115,8 @@ def parse_template_flowset(ipa, odid, packed):
     record_count = 0
 
     start = 0
-    while True:
+    while start < len(packed):  # simple condition: no padding at end of set
         stop = start + 4
-        try:
-            assert len(packed[start:stop]) == 4
-        except AssertionError:
-            break  # FlowSet done
 
         # next Template ID and Field Count
         tid, fieldcount = struct.unpack("!HH", packed[start:stop])
@@ -148,13 +153,13 @@ def dispatch_flowset(ipa, odid, setid, packed):
 
     if setid == 0:
         # Template FlowSet
-        record_count += parse_template_flowset(ipa, odid, packed)
+        record_count = parse_template_flowset(ipa, odid, packed)
     elif setid == 1:
         # Options Template FlowSet
-        record_count += parse_options_template_flowset(ipa, odid, packed)
+        record_count = parse_options_template_flowset(ipa, odid, packed)
     elif 255 < setid and setid < 65536:
         # Data FlowSet
-        record_count += parse_data_flowset(ipa, odid, setid, packed)
+        record_count = parse_data_flowset(ipa, odid, setid, packed)
     else:
         # interval [2, 255]
         logger.error(
