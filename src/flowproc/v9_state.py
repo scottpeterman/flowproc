@@ -1,4 +1,3 @@
-
 """
 The stateful parts of NetFlow V9 parsing - i.e. templates and
 exporter attributes and options.
@@ -8,7 +7,7 @@ import logging
 
 from datetime import datetime
 
-from flowproc.collector_state import AbstractTemplate 
+from flowproc.collector_state import AbstractTemplate
 from flowproc.collector_state import Collector
 
 # global settings
@@ -26,7 +25,7 @@ class Template(AbstractTemplate):
     def __init__(self, ipa, odid, tid, tdata):
         self.tid = tid
         self.tdata = tdata
-        self.lastwrite = datetime.now()
+        self.lastwrite = datetime.utcnow()  # TODO add timezone info
 
         Collector.register(ipa, odid, self)
 
@@ -54,7 +53,9 @@ class Template(AbstractTemplate):
         return self.tdata[1::2]  # same for all field lengths
 
     def __str__(self):
-        return "tid: {:d}, lastwrite: {}".format(self.tid, self.lastwrite)
+        return "{:d} age={} types={}".format(
+            self.tid, datetime.utcnow() - self.lastwrite, self.types
+        )
 
     def __repr__(self):
         return self.tid, self.tdata
@@ -71,14 +72,11 @@ class OptionsTemplate(Template):
     def __init__(self, ipa, odid, tid, tdata, scopelen, optionlen):
         self.tid = tid
         self.tdata = tdata
-        self.lastwrite = datetime.now()
+        self.lastwrite = datetime.utcnow()  # TODO add timezone info
         self.scopelen = scopelen
         self.optionlen = optionlen
 
         Collector.register(ipa, odid, self)
-
-    def __str__(self):
-        return "tid: {:d}, lastwrite: {}".format(self.tid, self.lastwrite)
 
     def __repr__(self):
         return self.tid, self.tdata, self.scopelen, self.optionlen

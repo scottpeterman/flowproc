@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Highly EXPERIMENTAL!
+Experimental
 """
 
 import json
 import logging
+
+from datetime import datetime
 
 from flowproc import __version__
 from flowproc.collector_state import Collector
@@ -23,24 +25,45 @@ class TreeVisitor:
     Return some kind of ASCII tree
     """
 
-    def __init__(self):
-        self.rep = Collector.__name__ + "\n"
-
     @stopwatch
     def visit_Collector(self, host):
+        collector = {
+            "flowproc": __version__,
+            "at": str(datetime.utcnow()),  # TODO add timezone info
+            "parser": "V9 someting...",
+            # "transport": "UDP",
+            # "security": None,
+        }
+        exp = {}
+        collector["exporters"] = exp
+
         for child in host.children.values():
-            self.rep += str(child) + "\n"
-            child.accept(self)
-            return self.rep
+            exp[child.ipa] = []
+            exp[child.ipa].append(child.accept(self))
+
+        return json.dumps(collector, indent=4)
+        # return str(self.collector)
 
     def visit_Exporter(self, host):
+        domain = {}
+
         for child in host.children.values():
-            self.rep += "\t" + str(child) + "\n"
-            child.accept(self)
+            attr = {}
+            domain[child.odid] = attr
+            attr["optstrings"] = [str(opt) for opt in child.optrecs]
+            attr["templatestrings"] = [
+                template for template in child.accept(self)
+            ]
+
+        return domain
 
     def visit_ObservationDomain(self, host):
+        strings = []
         for child in host.children.values():
-            self.rep += "\t" * 2 + str(child) + "\n"
+            # template classes' __str__ method for this shor JSON document
+            strings.append(str(child))
+
+        return strings
 
 
 @stopwatch
