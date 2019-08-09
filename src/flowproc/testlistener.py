@@ -15,8 +15,9 @@ from importlib import reload
 from flowproc import __version__
 from flowproc import testasync
 # from flowproc import v5_parser
+from flowproc import v9_classes
+from flowproc import v9_fieldtypes
 from flowproc import v9_parser
-from flowproc import v9_state  # rename to something not implying state!
 # from flowproc import v10_parser
 from flowproc.collector_state import Collector
 
@@ -119,8 +120,9 @@ def start(parser, host, port, socketpath):
         writer.close()
 
     def load():
-        modules = (testasync, v9_state)
+        modules = (testasync, v9_classes, v9_fieldtypes)
         [reload(m) for m in modules]
+        logger.info("Reloaded {}".format(modules))
         return "reloaded {}".format([m.__name__ for m in modules])
 
     def stop():

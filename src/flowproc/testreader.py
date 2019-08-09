@@ -10,7 +10,7 @@ import sys
 import logging
 
 from flowproc import __version__
-from flowproc import testlistener
+from flowproc import testasync
 # from flowproc import v5_parser
 from flowproc import v9_parser
 
@@ -107,7 +107,7 @@ def main(args):
         print()  # newline
         print("Closing infile...")
 
-    print(testlistener.stats())
+    print(testasync.stats())
 
 
 def run():

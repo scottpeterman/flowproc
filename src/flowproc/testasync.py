@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class TreeVisitor:
     """
-    Return some kind of ASCII tree
+    Return collector state nested in JSON format
     """
 
     @stopwatch
@@ -60,7 +60,7 @@ class TreeVisitor:
     def visit_ObservationDomain(self, host):
         strings = []
         for child in host.children.values():
-            # template classes' __str__ method for this shor JSON document
+            # template classes' __str__ method for this short JSON document
             strings.append(str(child))
 
         return strings

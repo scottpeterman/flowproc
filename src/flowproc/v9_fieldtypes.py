@@ -6,6 +6,17 @@ https://raw.githubusercontent.com/bitkeks/python-netflow-v9-softflowd/master/src
 
 Copyright 2017, 2018 Dominik Pataky <dev@bitkeks.eu>
 Licensed under MIT License. See LICENSE.
+
+Noted by shuntingyard:
+
+    In resource 
+    https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html
+    Cisco states:
+
+        For the information on the field types with the numbers
+        between 128 and 32768, please refer to the IANA registry of
+        IPFIX information elements at
+        https://www.iana.org/assignments/ipfix/ipfix.xhtml.
 """
 
 LABEL = {
