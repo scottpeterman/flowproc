@@ -53,7 +53,10 @@ class Template(AbstractTemplate):
         return "{:d} age={} types={}".format(
             self.tid,
             datetime.utcnow() - self.lastwrite,
-            [v9_fieldtypes.LABEL.get(n, n) for n in self.types],
+            list(zip(
+                [v9_fieldtypes.LABEL.get(n, n) for n in self.types],
+                self.lengths
+            )),
         )
 
     def __repr__(self):
@@ -104,14 +107,17 @@ class OptionsTemplate(AbstractTemplate):
         return "{:d} age={} scopes={} options={}".format(
             self.tid,
             datetime.utcnow() - self.lastwrite,
-            [
-                v9_fieldtypes.SCOPE_LABEL.get(n, n)
-                for n in self.scope_types
-            ],
-            [
-                v9_fieldtypes.LABEL.get(n, n)
-                for n in self.option_types
-            ],
+            list(zip(
+                [
+                    v9_fieldtypes.SCOPE_LABEL.get(n, n)
+                    for n in self.scope_types
+                ],
+                self.scope_lengths
+            )),
+            list(zip(
+                [v9_fieldtypes.LABEL.get(n, n) for n in self.option_types],
+                self.option_lengths
+            )),
         )
 
     def __repr__(self):

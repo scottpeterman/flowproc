@@ -120,7 +120,7 @@ def start(parser, host, port, socketpath):
         writer.close()
 
     def load():
-        modules = (testasync, v9_classes, v9_fieldtypes)
+        modules = (testasync, v9_classes, v9_fieldtypes, v9_parser)
         [reload(m) for m in modules]
         logger.info("Reloaded {}".format(modules))
         return "reloaded {}".format([m.__name__ for m in modules])
@@ -138,7 +138,7 @@ def start(parser, host, port, socketpath):
             "stats": testasync.stats,
             "tree": testasync.depth_first_iter,
             "visit": lambda: Collector.accept(testasync.TreeVisitor()),
-            "reload": lambda: load(),
+            "reload": load,
             "shutdown": stop,
             "help": lambda: "Command must be one of {}".format(
                 [c for c in run.keys()]

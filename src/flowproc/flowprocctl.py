@@ -52,6 +52,13 @@ def unix_socket_client(command, socketpath):
     writer.write(command.encode())
 
     data = yield from reader.read(-1)
+
+    # TODO Don't format on the server side. Rather distinguish commands on
+    #       this side and use
+    #
+    #           https://docs.python.org/3/library/pprint.html
+    #
+    #       here to configure JSON printing to the console.
     print(data.decode())
     writer.close()
 

@@ -198,22 +198,19 @@ def parse_packet(datagram, ipa):
         data = packed[4:setlen]
         record_count += dispatch_flowset(ipa, odid, setid, data)
 
-        # TODO Code snippet duplicated: get organized!
-        if count:
-            if count != record_count:
-                logger.warning(
-                    "Record account not balanced {}/{}".format(
-                        count, record_count
-                    )
-                )
-            else:
-                logger.debug("Processed {} records".format(count))
-
         packed = packed[setlen:]
 
+    if count:
+        if count != record_count:
+            logger.warning(
+                "Record account not balanced {}/{}".format(
+                    record_count, count
+                )
+            )
+
     logger.info(
-        "Parsed packet {} WITHOUT checks, {:d} recs processed from {}".format(
-            header, record_count, ipa
+        "Parsed {} WITHOUT checks, {}/{} recs processed from {}".format(
+            header, record_count, count, ipa
         )
     )
 
@@ -262,7 +259,7 @@ def parse_file(fh, ipa):
                 if count != record_count:
                     logger.warning(
                         "Record account not balanced {}/{}".format(
-                            count, record_count
+                            record_count, count
                         )
                     )
                 else:
