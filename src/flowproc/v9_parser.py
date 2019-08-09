@@ -6,9 +6,10 @@ Parser for NetFlow V9 packets
 import logging
 import struct
 
-from flowproc import v9_classes
 from flowproc import util
 from flowproc.collector_state import Collector
+from flowproc.v9_classes import OptionsTemplate
+from flowproc.v9_classes import Template
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -39,15 +40,9 @@ def parse_data_flowset(ipa, odid, tid, packed):
     template = Collector.get_qualified(ipa, odid, tid)
     if template:
 
-        if isinstance(template, v9_classes.OptionsTemplate):
-            logger.debug(
-                "OT {} {} {}".format(
-                    tid, template.scope_types, template.option_types
-                )
-            )
+        if isinstance(template, OptionsTemplate):
             reclen = sum(template.scope_lengths) + sum(template.option_lengths)
         else:
-            logger.debug("T  {} {}".format(tid, template.types))
             reclen = sum(template.lengths)
 
         record_count = len(packed) // reclen  # divide // to rule out padding
@@ -101,7 +96,7 @@ def parse_options_template_flowset(ipa, odid, packed):
         )
         start = stop
 
-        v9_classes.OptionsTemplate(ipa, odid, tid, scopes, options)
+        OptionsTemplate(ipa, odid, tid, scopes, options)
         record_count += 1
 
     return record_count
@@ -135,7 +130,7 @@ def parse_template_flowset(ipa, odid, packed):
         tdata = struct.unpack("!" + "HH" * fieldcount, packed[start:stop])
         start = stop
 
-        v9_classes.Template(ipa, odid, tid, tdata)
+        Template(ipa, odid, tid, tdata)
         record_count += 1
 
     return record_count
@@ -291,7 +286,7 @@ def parse_file(fh, ipa):
                     )
                     if updiff > lim * 1000:
                         logger.warning("Discarding templates")
-                        v9_classes.Template.discard_all()
+                        Template.discard_all()
 
             lastup = up
             lastseq = seq

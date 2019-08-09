@@ -114,8 +114,8 @@ def start(parser, host, port, socketpath):
     def callback(reader, writer):  # callback function for Unix Sockets
         data = yield from reader.read(1024)
         msg = data.decode()
-        msg = run_command(msg)
-        writer.write(msg.encode())
+        msg = run_command(msg.split())  # seems to work on multiple whitespace
+        writer.write(str(msg).encode())
         yield from writer.drain()
         writer.close()
 
@@ -125,29 +125,42 @@ def start(parser, host, port, socketpath):
         logger.info("Reloaded {}".format(modules))
         return "reloaded {}".format([m.__name__ for m in modules])
 
+    def setloglevel(level):
+        logger.setLevel(int(level))  # Int because args are split-up `str`.
+        return logger.level
+
     def stop():
         loop.stop()
         return "stopping event loop..."
 
-    def run_command(cmd):
+    def run_command(args):
         """
         Reply to the few commands existing
         """
         run = {
             "ping": lambda: "pong",
+            "getloglevel": lambda: logger.level,
+            "setloglevel": setloglevel,
             "stats": testasync.stats,
-            "tree": testasync.depth_first_iter,
-            "visit": lambda: Collector.accept(testasync.TreeVisitor()),
+            "tree": lambda: Collector.accept(testasync.TreeVisitor()),
             "reload": load,
             "shutdown": stop,
             "help": lambda: "Command must be one of {}".format(
                 [c for c in run.keys()]
             ),
         }
+        logger.info("Ctrl: {}".format(args))
+        cmd = args[0]
         if cmd not in run.keys():
             return "Command '{}' unknown".format(cmd)
         else:
-            return run[cmd]()
+            try:
+                if len(args) == 1:
+                    return run[cmd]()
+                else:
+                    return run[cmd](*args[1:])
+            except Exception as e:
+                return e
 
     loop = asyncio.get_event_loop()
     # UDP

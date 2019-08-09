@@ -11,6 +11,9 @@ from datetime import datetime
 from flowproc import __version__
 from flowproc.collector_state import Collector
 from flowproc.util import stopwatch
+from flowproc.v9_classes import OptionsTemplate
+from flowproc.v9_classes import Template
+from flowproc import v9_fieldtypes
 
 __author__ = "Tobias Frei"
 __copyright__ = "Tobias Frei"
@@ -41,8 +44,8 @@ class TreeVisitor:
             exp[child.ipa] = []
             exp[child.ipa].append(child.accept(self))
 
-        return json.dumps(collector, indent=4)
-        # return str(self.collector)
+        # return as is, pretty-printing to be done on client side
+        return json.dumps(collector)
 
     def visit_Exporter(self, host):
         domain = {}
@@ -50,37 +53,35 @@ class TreeVisitor:
         for child in host.children.values():
             attr = {}
             domain[child.odid] = attr
-            attr["optstrings"] = [str(opt) for opt in child.optrecs]
-            attr["templatestrings"] = [
-                template for template in child.accept(self)
-            ]
+            attr["option_data"] = child.optrecs
+            attr["templates"] = child.accept(self)
 
         return domain
 
     def visit_ObservationDomain(self, host):
-        strings = []
+        templates = {}
         for child in host.children.values():
-            # template classes' __str__ method for this short JSON document
-            strings.append(str(child))
+            attr = {}
+            templates[child.tid] = attr
+            # Format returned by str( timedelata ) e.g '0:02:41.411545' -
+            # we just show the first part and discard fractions of seconds.
+            attr["age"] = str(datetime.utcnow() - child.lastwrite).split(".")[
+                0
+            ]
+            if isinstance(child, Template):
+                attr["types"] = [
+                    v9_fieldtypes.LABEL.get(n, n) for n in child.types
+                ]
+            if isinstance(child, OptionsTemplate):
+                attr["scope_types"] = [
+                    v9_fieldtypes.SCOPE_LABEL.get(n, n)
+                    for n in child.scope_types
+                ]
+                attr["option_types"] = [
+                    v9_fieldtypes.LABEL.get(n, n) for n in child.option_types
+                ]
 
-        return strings
-
-
-@stopwatch
-def depth_first_iter():
-    """
-    Return some kind of ASCII tree
-    """
-    rep = str(Collector) + "\n"
-    for exp in Collector.children.values():
-        rep += str(exp) + "\n"
-
-        for od in exp.children.values():
-            rep += "\t" + str(od) + "\n"
-
-            for template in od.children.values():
-                rep += str(template) + "\n"
-    return rep
+        return templates
 
 
 def stats():

@@ -6,6 +6,8 @@ The flow collector daemon control program
 
 import argparse
 import asyncio
+import json
+import pprint
 import sys
 
 from flowproc import __version__
@@ -53,13 +55,15 @@ def unix_socket_client(command, socketpath):
 
     data = yield from reader.read(-1)
 
-    # TODO Don't format on the server side. Rather distinguish commands on
-    #       this side and use
-    #
-    #           https://docs.python.org/3/library/pprint.html
-    #
-    #       here to configure JSON printing to the console.
-    print(data.decode())
+    msg = data.decode()
+    # If JSON, we might pretty-print:
+    try:
+        msg = json.loads(msg)
+        # pprint.PrettyPrinter(indent=1, width=80, compact=True)
+        pprint.pprint(msg, width=172, compact=True)
+    except json.decoder.JSONDecodeError:
+        print(msg)
+
     writer.close()
 
 
