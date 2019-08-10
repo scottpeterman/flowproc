@@ -82,7 +82,7 @@ def parse_options_data_records(ipa, odid, template, flowset):
     options.update(list(zip(labels, unpacked)))
 
     # register record with corresponding odid
-    optrec = {**scopes, **options}
+    optrec = scopes.update(options)
     Collector.register_optrec(ipa, odid, optrec)
 
     print("OptionsDataRec: {}".format(optrec))
