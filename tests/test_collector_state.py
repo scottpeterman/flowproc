@@ -12,6 +12,7 @@ import time
 
 from datetime import datetime
 
+from flowproc import testasync
 from flowproc.collector_state import AbstractTemplate
 from flowproc.collector_state import Collector
 
@@ -28,7 +29,7 @@ class T(AbstractTemplate):
         self.tid = tid
         # some simulation of real-life attrs
         self.attr = list(map(lambda x: self.tid * x, [18, 22, 0.77, 3, 5]))
-        self.lastwrite = datetime.now()
+        self.lastwrite = datetime.utcnow()
 
     def get_tid(self):
         return self.tid
@@ -67,8 +68,12 @@ def test_Collector_get():
 
     # paths ipa, odid (observation domain ID)
     assert str(Collector.get_qualified("2001:420:1101:1::185", 0)) == "0"
-    assert Collector.get_qualified("2001:420:1101:1::186", 0) is None  # missing
-    assert Collector.get_qualified("2001:420:1101:1::185", 1) is None  # missing
+    assert (
+        Collector.get_qualified("2001:420:1101:1::186", 0) is None
+    )  # missing
+    assert (
+        Collector.get_qualified("2001:420:1101:1::185", 1) is None
+    )  # missing
 
     # paths ipa, odid, tid (Template ID)
     assert Collector.get_qualified("127.0.0.1", 0, 300).get_tid() == 300
@@ -88,3 +93,20 @@ def test_Collector_get():
 
     # TODO Collector.check_header()
     # TODO Collector.unregister()
+
+
+def test_Collector_register_optrec():
+
+    rec = {
+        "System": 2130706433,
+        "INPUT_SNMP": 128,
+        "IF_NAME": "lo",
+        "IF_DESC": "Loopback",
+    }
+    # path not existing: False
+    assert not Collector.register_optrec("127.0.0.1", 2, rec)
+
+    # existing: True
+    assert Collector.register_optrec("127.0.0.1", 1, rec)
+
+    print(Collector.accept(testasync.TreeVisitor()))

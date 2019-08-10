@@ -53,7 +53,7 @@ class TreeVisitor:
         for child in host.children.values():
             attr = {}
             domain[child.odid] = attr
-            attr["option_data"] = child.optrecs
+            attr["options_records"] = [rec for rec in child.optrecs if rec is not None]
             attr["templates"] = child.accept(self)
 
         return domain
@@ -63,7 +63,7 @@ class TreeVisitor:
         for child in host.children.values():
             attr = {}
             templates[child.tid] = attr
-            # Format returned by str( timedelata ) e.g '0:02:41.411545' -
+            # Format returned by str( timedelta ) e.g '0:02:41.411545' -
             # we just show the first part and discard fractions of seconds.
             attr["age"] = str(datetime.utcnow() - child.lastwrite).split(".")[
                 0

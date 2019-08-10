@@ -7,6 +7,7 @@ import logging
 
 from abc import ABC
 from abc import abstractmethod
+from collections import deque
 from datetime import datetime
 from ipaddress import ip_address
 
@@ -79,6 +80,18 @@ class Collector:
         cls.accept(RegisteringVisitor(ipa, odid, template))
 
     @classmethod
+    def register_optrec(cls, ipa, odid, dict):
+        """
+        Register an Options Data Record (`dict`) with the `ObservationDomain`
+        given by path.
+        """
+        try:
+            cls.children[ipa].children[odid].optrecs.append(dict)
+            return True
+        except KeyError:
+            return False
+
+    @classmethod
     def unregister(cls, ipa, odid):
         """
         Remove rightmost element in path (and its child nodes)
@@ -104,10 +117,10 @@ class ObservationDomain(Visitable):
     TODO Clarify relation to exporters (and for V10) transport protocols.
     """
 
-    def __init__(self, odid):
+    def __init__(self, odid, bufsize=8):
         self.children = {}
         self.odid = int(odid)
-        self.optrecs = []  # option data records collected for self
+        self.optrecs = deque(maxlen=bufsize)  # option data records collected
 
     def __repr__(self):
         return str(self.odid)

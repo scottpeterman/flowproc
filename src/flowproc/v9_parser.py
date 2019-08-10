@@ -81,7 +81,11 @@ def parse_options_data_records(ipa, odid, template, flowset):
     labels = [v9_fieldtypes.LABEL.get(n, n) for n in template.option_types]
     options.update(list(zip(labels, unpacked)))
 
-    print("OptionsDataRec: {} {}".format(scopes, options))
+    # register record with corresponding odid
+    optrec = {**scopes, **options}
+    Collector.register_optrec(ipa, odid, optrec)
+
+    print("OptionsDataRec: {}".format(optrec))
 
     reclen = sum(template.scope_lengths) + sum(template.option_lengths)
     record_count = len(flowset) // reclen  # divide // to rule out padding
