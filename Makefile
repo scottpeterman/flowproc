@@ -2,7 +2,7 @@
 #
 all: sdist
 
-.PHONY: clean pull run test sdist
+.PHONY: clean venv pull run test sdist upload
 
 clean:
 	rm -rf .venv

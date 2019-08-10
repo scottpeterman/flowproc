@@ -7,8 +7,8 @@ Python network flow processing collector and library
         :target: https://pypi.python.org/pypi/flowproc/
         :alt: Latest Version
 
-.. image:: https://travis-ci.com/shuntingyard/flowproc.svg?branch=master
-        :target: https://travis-ci.com/shuntingyard/flowproc
+.. image:: https://travis-ci.org/shuntingyard/flowproc.svg?branch=master
+        :target: https://travis-ci.org/shuntingyard/flowproc
         :alt: Travis
 
 .. image:: https://img.shields.io/pypi/l/flowproc.svg
