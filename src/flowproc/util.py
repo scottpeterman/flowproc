@@ -26,6 +26,7 @@ def stopwatch(fn):
     """
     Log (DEBUG) how much time is spent in decorated fn.
     """
+
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         start = time.perf_counter()
@@ -275,8 +276,14 @@ ICMPTEXT = {
     (3, 6): "Destination Network Unknown",
     (3, 7): "Destination Host Unknown",
     (3, 8): "Source Host Isolated",
-    (3, 9): "Communication with Destination Network is Administratively Prohibited",
-    (3, 10): "Communication with Destination Host is Administratively Prohibited",
+    (
+        3,
+        9,
+    ): "Communication with Destination Network is Administratively Prohibited",
+    (
+        3,
+        10,
+    ): "Communication with Destination Host is Administratively Prohibited",
     (3, 11): "Destination Network Unreachable for Type of Service",
     (3, 12): "Destination Host Unreachable for Type of Service",
     (3, 13): "Communication Administratively Prohibited    ",
@@ -291,3 +298,50 @@ ICMPTEXT = {
     (11, 0): "Time to Live exceeded in Transit",
     (11, 1): "Fragment Reassembly Time Exceeded",
 }
+
+
+def ffs(length, ftype=None):
+    """Format Field String (ffs)
+
+    Args:
+        length      `int`: the field length
+        ftype       `int`: field type
+
+    Return:
+        Format string for 'struct.unpack' w. prefix '!' (network byte order)
+    """
+    # TODO Revise/ improve!
+
+    # filtering dict
+    fdict = {
+        40: "Ixxxx",  # these 4 types (from TOTAL_BYTES_EXP and 163
+        41: "Ixxxx",  # send lengt=8
+        42: "Ixxxx",
+        163: "Ixxxx",
+        153: "Ixxxx",  # 153, 160, NF_F_FLOW_CREATE_TIME_MSEC
+        160: "Ixxxx",
+        152: "Ixxxx",
+    }
+    try:
+        return fdict[ftype]  # lookup for problematic fields
+    except KeyError:
+        pass
+
+    ldict = {1: "B", 2: "H", 4: "I", 8: "Q"}
+    return ldict[length]
+
+
+def vunpack(dataslice):
+    """
+    Variable (length) unpack
+
+    According to bitkeks (D. Pataky): "Better solution than struct.unpack
+                                       with variable field length"
+
+    We just try it out here :)
+    """
+    fdata = 0
+    for idx, byte in enumerate(reversed(bytearray(dataslice))):
+        fdata += byte << (idx * 8)
+
+    return fdata

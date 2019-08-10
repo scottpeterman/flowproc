@@ -80,6 +80,7 @@ class TreeVisitor:
                 attr["option_types"] = [
                     v9_fieldtypes.LABEL.get(n, n) for n in child.option_types
                 ]
+                attr["option_lengths"] = child.option_lengths
 
         return templates
 

@@ -6,7 +6,10 @@ Parser for NetFlow V9 packets
 import logging
 import struct
 
+from ipaddress import ip_address
+
 from flowproc import util
+from flowproc import v9_fieldtypes
 from flowproc.collector_state import Collector
 from flowproc.v9_classes import OptionsTemplate
 from flowproc.v9_classes import Template
@@ -22,15 +25,80 @@ lim = LIM
 
 
 @util.stopwatch
-def parse_data_flowset(ipa, odid, tid, packed):
+def parse_options_data_records(ipa, odid, template, flowset):
     """
-    Responsibility: parse Data FlowSets
+    Responsibility: parse Data FlowSet with Options Data Records
+
+    Args:
+        ipa         `str`: ip address of exporter
+        odid        `int`: Observation Domain ID (aka Source ID)
+        template    `OptionsTemplate`
+        flowset     `bytes`: the DataFlowSet
+
+    Return:
+        number of records processed
+    """
+    record_count = 0
+
+    # scopes part
+    scopes = {}
+    unpacked = []
+    start = 0
+    stop = start
+    for length in template.scope_lengths:
+        stop += length
+
+        unpacked.append(
+            struct.unpack(util.ffs(length), flowset[start:stop])[0]
+        )
+        start = stop
+
+    labels = [
+        v9_fieldtypes.SCOPE_LABEL.get(n, n) for n in template.scope_types
+    ]
+    scopes.update(list(zip(labels, unpacked)))
+
+    # options part
+    options = {}
+    unpacked = []
+
+    # To fix a few bad field lengths, we work with lengt/type-pairs
+    pair = list(zip(template.option_lengths, template.option_types))
+    for length, ftype in pair:
+        stop += length
+
+        try:
+            unpacked.append(
+                struct.unpack(
+                    util.ffs(length, ftype=ftype), flowset[start:stop]
+                )[0]
+            )
+        except KeyError:
+            # remove from 1st trailing \x00 and decode to `str`
+            unpacked.append(flowset[start:stop].partition(b"\0")[0].decode())
+        start = stop
+
+    labels = [v9_fieldtypes.LABEL.get(n, n) for n in template.option_types]
+    options.update(list(zip(labels, unpacked)))
+
+    print("OptionsDataRec: {} {}".format(scopes, options))
+
+    reclen = sum(template.scope_lengths) + sum(template.option_lengths)
+    record_count = len(flowset) // reclen  # divide // to rule out padding
+
+    return record_count
+
+
+@util.stopwatch
+def parse_data_flowset(ipa, odid, tid, flowset):
+    """
+    Responsibility: parse Data FlowSet
 
     Args:
         ipa         `str`: ip address of exporter
         odid        `int`: Observation Domain ID (aka Source ID)
         tid         `int`: the setid here IS the tid (aka Template ID)
-        packed      `bytes`: data to parse
+        flowset     `bytes`: the DataFlowSet
 
     Return:
         number of records processed
@@ -41,11 +109,40 @@ def parse_data_flowset(ipa, odid, tid, packed):
     if template:
 
         if isinstance(template, OptionsTemplate):
-            reclen = sum(template.scope_lengths) + sum(template.option_lengths)
+            return parse_options_data_records(ipa, odid, template, flowset)
+
         else:
+            record = {}
+            unpacked = []
+            start = 0
+            stop = start
+            for length in template.lengths:
+                stop += length
+
+                unpacked.append(util.vunpack(flowset[start:stop]))
+                start = stop
+
+            labels = [v9_fieldtypes.LABEL.get(n, n) for n in template.types]
+            record.update(list(zip(labels, unpacked)))
+
+            # replace ont the fly, just for testing/ plausibility checking
+            # TODO Remove later!
+            for k, v in record.items():
+                if k in [
+                    "IPV4_SRC_ADDR",
+                    "IPV4_DST_ADDR",
+                    "IPV4_NEXT_HOP",
+                    "IPV6_SRC_ADDR",
+                    "IPV6_DST_ADDR",
+                    "IPV6_NEXT_HOP",
+                ]:
+                    record[k] = ip_address(v).exploded
+
+            print("DataRec: {}".format(record))
+
             reclen = sum(template.lengths)
 
-        record_count = len(packed) // reclen  # divide // to rule out padding
+        record_count = len(flowset) // reclen  # divide // to rule out padding
 
     else:
         # TODO Stash all these away for later processing!
@@ -198,9 +295,7 @@ def parse_packet(datagram, ipa):
     if count:
         if count != record_count:
             logger.warning(
-                "Record account not balanced {}/{}".format(
-                    record_count, count
-                )
+                "Record account not balanced {}/{}".format(record_count, count)
             )
 
     logger.info(
